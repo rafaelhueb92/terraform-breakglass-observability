@@ -27,21 +27,23 @@ resource "aws_athena_named_query" "queries" {
   query     = each.value
 }
 
-# QuickSight resources are created in the account's QuickSight home Region.
 resource "aws_quicksight_data_source" "athena" {
   aws_account_id = data.aws_caller_identity.current.account_id
   data_source_id = "breakglass-athena"
   name           = "BreakGlass Athena"
   type           = "ATHENA"
-  data_source_parameters {
-    athena_parameters { work_group = aws_athena_workgroup.breakglass.name }
+  parameters {
+    athena {
+      work_group = aws_athena_workgroup.breakglass.name
+    }
   }
-  permissions {
-    principal = var.quicksight_user_arn
+  permission {
+    principal = var.quicksight_user
     actions   = ["quicksight:DescribeDataSource", "quicksight:DescribeDataSourcePermissions", "quicksight:PassDataSource", "quicksight:UpdateDataSource", "quicksight:DeleteDataSource", "quicksight:UpdateDataSourcePermissions"]
   }
   tags = var.common_tags
 }
+
 resource "aws_quicksight_data_set" "top_apis" {
   aws_account_id = data.aws_caller_identity.current.account_id
   data_set_id    = "breakglass-top-apis"
@@ -68,8 +70,8 @@ resource "aws_quicksight_data_set" "top_apis" {
     }
   }
   permissions {
-    principal = var.quicksight_user_arn
-    actions   = ["quicksight:DescribeDataSet", "quicksight:DescribeDataSetPermissions", "quicksight:PassDataSet", "quicksight:DescribeIngestion", "quicksight:ListIngestions", "quicksight:UpdateDataSet", "quicksight:DeleteDataSet", "quicksight:UpdateDataSetPermissions"]
+    principal = var.quicksight_user
+    actions   = ["quicksight:DescribeDataSet", "quicksight:DescribeDataSetPermissions", "quicksight:PassDataSet", "quicksight:DescribeIngestion", "quicksight:ListIngestions", "quicksight:UpdateDataSet", "quicksight:DeleteDataSet", "quicksight:CreateIngestion", "quicksight:CancelIngestion", "quicksight:UpdateDataSetPermissions"]
   }
   tags = var.common_tags
 }

@@ -17,24 +17,13 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
 
-locals {
-  # Keep names predictable for a lab while account ID prevents cross-account collisions.
-  name_prefix = "${var.prefix}-${data.aws_caller_identity.current.account_id}"
-  common_tags = {
-    ManagedBy   = "Terraform"
-    Project     = "BreakGlassObservability"
-    Environment = "lab"
-  }
-}
 
 module "iam" {
   source = "./modules/iam"
 
   break_glass_role_name  = var.break_glass_role_name
-  trusted_principal_arns = var.trusted_principal_arns
+  trusted_principal_arns = concat(var.trusted_principal_arns, ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/admin"])
   common_tags            = local.common_tags
 }
 
@@ -98,6 +87,6 @@ module "analytics" {
   parquet_bucket_arn  = module.lake.parquet_bucket_arn
   glue_database_name  = module.lake.glue_database_name
   glue_table_name     = module.lake.glue_table_name
-  quicksight_user_arn = var.quicksight_user_arn
+  quicksight_user     = local.quicksight_user
   common_tags         = local.common_tags
 }

@@ -32,8 +32,8 @@ variable "log_retention_days" {
   }
 }
 
-variable "quicksight_user_arn" {
-  description = "ARN of an existing QuickSight user that will own and query the dataset."
+variable "quicksight_user" {
+  description = "An existing QuickSight user that will own and query the dataset."
   type        = string
 }
 

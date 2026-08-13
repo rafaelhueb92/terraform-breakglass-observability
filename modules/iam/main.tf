@@ -1,10 +1,27 @@
 data "aws_iam_policy_document" "trust" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "AWS"
-      identifiers = var.trusted_principal_arns
+  dynamic "statement" {
+    for_each = length(var.trusted_principal_arns) > 0 ? [1] : []
+    content {
+      effect  = "Allow"
+      actions = ["sts:AssumeRole"]
+      principals {
+        type        = "AWS"
+        identifiers = var.trusted_principal_arns
+      }
+    }
+  }
+
+  # IAM rejects an Allow statement with no principals. Preserve the safe default:
+  # when no trusted principal is configured, nobody can assume this role.
+  dynamic "statement" {
+    for_each = length(var.trusted_principal_arns) == 0 ? [1] : []
+    content {
+      effect  = "Deny"
+      actions = ["sts:AssumeRole"]
+      principals {
+        type        = "AWS"
+        identifiers = ["*"]
+      }
     }
   }
 }

@@ -18,6 +18,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "parquet" {
   rule {
     id     = "lab-retention"
     status = "Enabled"
+    filter {}
     # Observability data is useful briefly in a lab; expiration prevents silent cost growth.
     expiration { days = var.log_retention_days }
   }

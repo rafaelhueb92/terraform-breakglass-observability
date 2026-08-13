@@ -9,17 +9,21 @@ A compact AWS lab for detecting, retaining, and querying CloudTrail actions made
 ## Prerequisites ✅
 
 - Terraform 1.5 or later and AWS credentials with permissions to create the listed IAM, S3, CloudTrail, Lambda, Firehose, Glue, Athena, EventBridge, and QuickSight resources.
-- An existing, subscribed QuickSight user in the same AWS account. Set its ARN in `quicksight_user_arn`.
-- Python dependencies bundled for Lambda before applying. `archive_file` only archives files; it cannot compile pyarrow's native libraries. From `lambda/converter`, run `pip install -r requirements.txt -t .` using an Amazon Linux-compatible build environment, or replace it with an appropriate pyarrow Lambda layer.
+- An existing, subscribed QuickSight user in the same AWS account. Set its ARN in `quicksight_user`.
+- Docker is required only if you build a separate Linux-compatible dependency package for Lambda. The default Terraform archive contains the converter source directory.
 
 ## Quick start 🚀
 
 ```bash
 terraform init
-terraform apply -var='quicksight_user_arn=<existing-QuickSight-user-ARN>'
+terraform apply -var='quicksight_user=<existing-QuickSight-user-ARN>'
 ```
 
-To avoid malformed local Lambda packages, build dependencies first as noted above. S3 buckets use `force_destroy = true` and `prevent_destroy = false`, so `terraform destroy` cleans up lab objects as well as resources.
+S3 buckets use `force_destroy = true` and `prevent_destroy = false`, so `terraform destroy` cleans up lab objects as well as resources.
+
+## Troubleshooting
+
+See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup, permissions, DNS, and Lambda `pyarrow` packaging errors.
 
 ## Architecture 🏗️
 
@@ -53,7 +57,7 @@ BreakGlassRole -- CloudTrail management + S3 data events --> raw CloudTrail S3
 | `break_glass_role_name`  | string       | `BreakGlassRole` | Emergency role to create and detect.                          |
 | `trusted_principal_arns` | list(string) | `[]`             | Principals allowed to assume it.                              |
 | `log_retention_days`     | number       | `90`             | Parquet lifecycle expiration.                                 |
-| `quicksight_user_arn`    | string       | required         | Existing QuickSight user ARN.                                 |
+| `quicksight_user`        | string       | required         | Existing QuickSight user ARN.                                 |
 | `enable_glue_crawler`    | bool         | `true`           | Enable daily partition discovery.                             |
 
 ## Example Athena queries
@@ -73,3 +77,11 @@ The saved queries include `top_apis`, `daily_usage`, `unique_users`, and `servic
 ## Lab cost
 
 At low personal-lab volume this should be near-zero: S3 storage and Athena scans remain tiny, Lambda/Firehose stay within or close to free-tier usage, and CloudTrail management-event logging is free for the first trail. S3 data events, Firehose ingestion, Glue crawler DPU time, Athena bytes scanned, and QuickSight can incur charges; the daily crawler and a paid QuickSight edition are normally the largest surprises. Check current regional pricing before extended use.
+
+## Assume Role
+
+```bash
+aws sts assume-role \
+  --role-arn "arn:aws:iam::123456789012:role/TargetRoleName" \
+  --role-session-name "CLI-Session"
+```
