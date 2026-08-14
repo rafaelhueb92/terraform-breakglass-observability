@@ -71,6 +71,34 @@ terraform state rm module.analytics.aws_quicksight_account_subscription.poc
 
 This command does not delete the QuickSight account; it only stops Terraform from managing that obsolete resource.
 
+## Firehose buffering size
+
+The Firehose delivery stream is configured with `buffering_size = 64` MB. This was raised from the original 5 MB to reduce small Parquet fragments and improve Athena query performance. With a larger buffer, Firehose groups more records before landing each Parquet object, which lowers the number of objects scanned by Athena and reduces Glue crawler overhead.
+
+If your pipeline produces low-volume traffic, you may see a corresponding increase in latency because records wait until the buffer is full or the `buffering_interval` (60 seconds) expires. This is expected. For high-volume pipelines, the larger buffer is more efficient.
+
+To change the buffer size, edit `buffering_size` in `modules/ingestion/main.tf` and reapply:
+
+```bash
+terraform apply
+```
+
+Valid values are between 1 and 64 MB. Choose a smaller value if you need records delivered more quickly, or keep 64 MB for best query efficiency and cost at scale.
+
+## Firehose buffering size
+
+The Firehose delivery stream is configured with `buffering_size = 64` MB. This was raised from the original 5 MB to reduce small Parquet fragments and improve Athena query performance. With a larger buffer, Firehose groups more records before landing each Parquet object, which lowers the number of objects scanned by Athena and reduces Glue crawler overhead.
+
+If your pipeline produces low-volume traffic, you may see a corresponding increase in latency because records wait until the buffer is full or the `buffering_interval` (60 seconds) expires. This is expected. For high-volume pipelines, the larger buffer is more efficient.
+
+To change the buffer size, edit `buffering_size` in `modules/ingestion/main.tf` and reapply:
+
+```bash
+terraform apply
+```
+
+Valid values are between 1 and 64 MB. Choose a smaller value if you need records delivered more quickly, or keep 64 MB for best query efficiency and cost at scale.
+
 ## GitHub Actions cannot assume the AWS role
 
 The workflow uses GitHub's OIDC token; it does not use long-lived AWS access keys. The IAM role must trust the `token.actions.githubusercontent.com` OIDC provider and restrict the `sub` claim to this repository and its deployment branch. For example, replace the placeholders below with the repository owner/name and branch:

@@ -43,7 +43,7 @@ Pull requests run format, validation, and plan. Pushes to `master` or `main` app
 
 ## Troubleshooting
 
-See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup, permissions, DNS, and Firehose data-format conversion errors.
+See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup, permissions, DNS, Firehose buffering size, and Firehose data-format conversion errors.
 
 ## Architecture 🏗️
 

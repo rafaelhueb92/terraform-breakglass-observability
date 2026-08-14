@@ -104,7 +104,7 @@ resource "aws_kinesis_firehose_delivery_stream" "breakglass" {
     bucket_arn          = var.parquet_bucket_arn
     prefix              = "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
     error_output_prefix = "errors/!{firehose:error-output-type}/"
-    buffering_size      = 5
+    buffering_size      = 64
     buffering_interval  = 60
     compression_format  = "UNCOMPRESSED"
     data_format_conversion_configuration {
