@@ -10,7 +10,7 @@ A compact AWS lab for detecting, retaining, and querying CloudTrail actions made
 
 - Terraform 1.5 or later and AWS credentials with permissions to create the listed IAM, S3, CloudTrail, Lambda, Firehose, Glue, Athena, EventBridge, and QuickSight resources.
 - An existing, subscribed QuickSight user in the same AWS account. Set its username in `quicksight_user`.
-- Docker must be available when Terraform runs. Terraform builds a Linux-compatible Python 3.12 Lambda layer containing `pyarrow`, then deploys the converter function with that layer attached.
+- The Lambda uses only the Python standard library and the AWS SDK bundled with the Lambda runtime. Kinesis Firehose performs the JSON-to-Parquet conversion using the managed Glue schema, so no Docker image or dependency layer is required.
 
 ## Quick start 🚀
 
@@ -29,7 +29,7 @@ The backend bucket must already exist. The GitHub Actions workflow supplies thes
 
 ## GitHub Actions
 
-The repository workflow builds the Lambda function and dependency layer, then runs Terraform using GitHub Actions OIDC. Configure the following GitHub settings:
+The repository workflow runs Terraform using GitHub Actions OIDC. Configure the following GitHub settings:
 
 - Secret `AWS_ROLE_TO_ASSUME`: ARN of an IAM role trusted by GitHub's OIDC provider.
 - Variable `AWS_REGION`: deployment region, such as `us-east-1`.
@@ -43,7 +43,7 @@ Pull requests run format, validation, and plan. Pushes to `master` or `main` app
 
 ## Troubleshooting
 
-See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup, permissions, DNS, and Lambda `pyarrow` packaging errors.
+See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup, permissions, DNS, and Firehose data-format conversion errors.
 
 ## Architecture 🏗️
 

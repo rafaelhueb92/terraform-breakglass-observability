@@ -1,25 +1,24 @@
 # Troubleshooting
 
-## Lambda cannot import `pyarrow`
+## Lambda dependency or `pyarrow` errors
 
-If CloudWatch logs show the following error, the deployment package does not contain the Linux-compatible `pyarrow` dependency:
+The converter no longer imports `pyarrow`. It emits newline-delimited JSON, and Firehose converts that JSON to Parquet using the managed Glue table schema. If an old Lambda version reports this error:
 
 ```text
 Runtime.ImportModuleError: Unable to import module 'handler': No module named 'pyarrow'
 ```
 
-The GitHub Actions workflow builds a separate Lambda layer containing the dependencies and a function ZIP containing only `handler.py` before running Terraform:
+Run the latest Terraform workflow to deploy the dependency-free function:
 
 ```bash
-docker run --rm --platform linux/amd64 \
-  -v "./lambda/converter:/source:ro" \
-  -v "./lambda/converter:/source:ro" \
-  -v "./modules/ingestion/build:/build" \
-  python:3.12.13-slim-bookworm \
-  /bin/sh -c 'pip install -r /source/requirements.txt -t /build/layer/python'
+terraform apply
 ```
 
-Do not install `pyarrow` using the host macOS Python: Lambda requires Linux binaries. If you change `handler.py` or `requirements.txt`, Terraform rebuilds the package on the next apply.
+The old Lambda layer is removed from the Terraform configuration during that apply. No Docker build is needed.
+
+## Firehose conversion failures
+
+If Firehose reports data-format conversion errors, verify that the Glue database/table exists and that the Firehose role can read the table metadata (`glue:GetDatabase`, `glue:GetTable`, `glue:GetTableVersion`, and `glue:GetTableVersions`). The Glue table columns must match the JSON fields emitted by `handler.py`.
 
 ## QuickSight principal ARN is invalid
 

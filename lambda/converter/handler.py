@@ -1,28 +1,14 @@
 """Normalize only break-glass CloudTrail activity for Firehose delivery.
 
-The deployment package is intentionally built with Terraform's archive_file source.
-For real AWS deployment, install requirements.txt into this directory (or attach a
-compatible pyarrow Lambda layer) before apply; native dependencies cannot be built
-by archive_file itself.
+The Lambda emits newline-delimited JSON. Kinesis Firehose performs the Parquet
+conversion using its native data-format conversion and the Glue table schema.
 """
 import base64
 import boto3
 import gzip
-import io
 import json
 import os
 from urllib.parse import unquote_plus
-
-import pyarrow as pa
-import pyarrow.parquet as pq
-
-# A fixed schema keeps generated files aligned with the explicitly-managed Glue table.
-SCHEMA = pa.schema([
-    ("eventtime", pa.string()), ("eventname", pa.string()),
-    ("eventsource", pa.string()), ("username", pa.string()),
-    ("sessionarn", pa.string()), ("sourceipaddress", pa.string()),
-    ("requestparameters", pa.string()), ("errorcode", pa.string()),
-])
 
 
 def is_breakglass(event):
@@ -50,11 +36,9 @@ def as_row(event):
     }
 
 
-def parquet_bytes(event):
-    buffer = io.BytesIO()
-    # Parquet is written in memory because Firehose transformation responses contain bytes.
-    pq.write_table(pa.Table.from_pylist([as_row(event)], schema=SCHEMA), buffer, compression="snappy")
-    return buffer.getvalue()
+def row_bytes(event):
+    # Firehose's OpenX JSON deserializer consumes one JSON object per line.
+    return (json.dumps(as_row(event), separators=(",", ":")) + "\n").encode()
 
 
 def forward_cloudtrail_object(event):
@@ -82,7 +66,7 @@ def lambda_handler(event, _context):
             if not is_breakglass(cloudtrail_event):
                 output.append({"recordId": record["recordId"], "result": "Dropped", "data": record["data"]})
             else:
-                encoded = base64.b64encode(parquet_bytes(cloudtrail_event)).decode()
+                encoded = base64.b64encode(row_bytes(cloudtrail_event)).decode()
                 output.append({"recordId": record["recordId"], "result": "Ok", "data": encoded})
         except (ValueError, KeyError, json.JSONDecodeError) as exc:
             # Preserve Firehose retry semantics for malformed input rather than silently losing it.

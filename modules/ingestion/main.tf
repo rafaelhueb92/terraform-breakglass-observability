@@ -11,23 +11,8 @@ data "aws_iam_policy_document" "lambda_assume" {
 
 data "archive_file" "converter" {
   type        = "zip"
-  source_dir  = "${path.module}/build/function"
+  source_dir  = var.lambda_source_dir
   output_path = "${path.module}/converter.zip"
-}
-
-data "archive_file" "converter_dependencies" {
-  type        = "zip"
-  source_dir  = "${path.module}/build/layer"
-  output_path = "${path.module}/converter-dependencies-layer.zip"
-}
-
-resource "aws_lambda_layer_version" "converter_dependencies" {
-  layer_name               = "${var.name_prefix}-converter-dependencies"
-  filename                 = data.archive_file.converter_dependencies.output_path
-  source_code_hash         = data.archive_file.converter_dependencies.output_base64sha256
-  compatible_runtimes      = ["python3.12"]
-  compatible_architectures = ["x86_64"]
-  description              = "Linux x86_64 Python dependencies for the break-glass converter."
 }
 
 resource "aws_iam_role" "converter" {
@@ -68,7 +53,6 @@ resource "aws_lambda_function" "converter" {
   memory_size      = 1024
   filename         = data.archive_file.converter.output_path
   source_code_hash = data.archive_file.converter.output_base64sha256
-  layers           = [aws_lambda_layer_version.converter_dependencies.arn]
   # The stream name is deterministic, avoiding a Lambda/Firehose dependency cycle.
   environment { variables = { PARQUET_BUCKET = var.parquet_bucket_name, FIREHOSE_STREAM = "${var.name_prefix}-breakglass", BREAK_GLASS_ROLE_ARN = var.break_glass_role_arn } }
   tags = var.common_tags
@@ -101,6 +85,10 @@ data "aws_iam_policy_document" "firehose" {
     actions   = ["logs:PutLogEvents"]
     resources = ["*"]
   }
+  statement {
+    actions   = ["glue:GetDatabase", "glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions"]
+    resources = ["*"]
+  }
 }
 resource "aws_iam_role_policy" "firehose" {
   name   = "deliver-transformed-records"
@@ -119,6 +107,28 @@ resource "aws_kinesis_firehose_delivery_stream" "breakglass" {
     buffering_size      = 5
     buffering_interval  = 60
     compression_format  = "UNCOMPRESSED"
+    data_format_conversion_configuration {
+      enabled = true
+      input_format_configuration {
+        deserializer {
+          open_x_json_ser_de {}
+        }
+      }
+      output_format_configuration {
+        serializer {
+          parquet_ser_de {
+            compression = "SNAPPY"
+          }
+        }
+      }
+      schema_configuration {
+        database_name = var.glue_database_name
+        table_name    = var.glue_table_name
+        role_arn      = aws_iam_role.firehose.arn
+        region        = data.aws_region.current.name
+        version_id    = "LATEST"
+      }
+    }
     processing_configuration {
       enabled = true
       processors {

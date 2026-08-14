@@ -15,8 +15,6 @@ terraform.rc
 
 # Lambda build output and deployment archive
 modules/ingestion/converter.zip
-modules/ingestion/converter-dependencies-layer.zip
-modules/ingestion/build/
 lambda/converter/*
 !lambda/converter/handler.py
 !lambda/converter/requirements.txt

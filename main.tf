@@ -45,6 +45,8 @@ module "ingestion" {
   raw_logs_bucket_arn  = module.cloudtrail.raw_logs_bucket_arn
   parquet_bucket_arn   = module.lake.parquet_bucket_arn
   parquet_bucket_name  = module.lake.parquet_bucket_name
+  glue_database_name   = module.lake.glue_database_name
+  glue_table_name      = module.lake.glue_table_name
   lambda_source_dir    = "${path.root}/lambda/converter"
   break_glass_role_arn = module.iam.role_arn
   common_tags          = local.common_tags

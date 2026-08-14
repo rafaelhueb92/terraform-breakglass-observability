@@ -30,17 +30,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Lambda function and dependency layer
-        run: |
-          rm -rf modules/ingestion/build
-          mkdir -p modules/ingestion/build/function modules/ingestion/build/layer/python
-          cp lambda/converter/handler.py modules/ingestion/build/function/handler.py
-          docker run --rm --platform linux/amd64 \
-            -v "$PWD/lambda/converter:/source:ro" \
-            -v "$PWD/modules/ingestion/build:/build" \
-            python:3.12.13-slim-bookworm \
-            /bin/sh -c 'pip install --no-cache-dir -r /source/requirements.txt -t /build/layer/python'
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
