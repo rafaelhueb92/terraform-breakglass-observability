@@ -8,21 +8,22 @@ If CloudWatch logs show the following error, the deployment package does not con
 Runtime.ImportModuleError: Unable to import module 'handler': No module named 'pyarrow'
 ```
 
-Start Docker, then rebuild the Lambda package and run `terraform apply` again. Lambda requires Linux-compatible native dependencies:
+The GitHub Actions workflow builds a separate Lambda layer containing the dependencies and a function ZIP containing only `handler.py` before running Terraform:
 
 ```bash
 docker run --rm --platform linux/amd64 \
   -v "./lambda/converter:/source:ro" \
-  -v "./lambda/converter:/var/task" \
+  -v "./lambda/converter:/source:ro" \
+  -v "./modules/ingestion/build:/build" \
   python:3.12.13-slim-bookworm \
-  /bin/sh -c 'pip install -r /var/task/requirements.txt -t /var/task'
+  /bin/sh -c 'pip install -r /source/requirements.txt -t /build/layer/python'
 ```
 
 Do not install `pyarrow` using the host macOS Python: Lambda requires Linux binaries. If you change `handler.py` or `requirements.txt`, Terraform rebuilds the package on the next apply.
 
 ## QuickSight principal ARN is invalid
 
-`quicksight_user` must be the full ARN of an existing QuickSight user. It is not an account ID or an email address. Retrieve the authoritative ARN with:
+`quicksight_user` must be the username of an existing QuickSight user. It is not an account ID or a full ARN. Retrieve the username with:
 
 ```bash
 aws quicksight list-users \
@@ -36,7 +37,7 @@ aws quicksight list-users \
 Supply only the returned ARN as the variable value:
 
 ```bash
-terraform apply -var='quicksight_user=arn:aws:quicksight:us-east-1:<account-id>:user/default/<user-name>'
+terraform apply -var='quicksight_user=<user-name>'
 ```
 
 ## QuickSight service role has not been created
@@ -70,3 +71,28 @@ terraform state rm module.analytics.aws_quicksight_account_subscription.poc
 ```
 
 This command does not delete the QuickSight account; it only stops Terraform from managing that obsolete resource.
+
+## GitHub Actions cannot assume the AWS role
+
+The workflow uses GitHub's OIDC token; it does not use long-lived AWS access keys. The IAM role must trust the `token.actions.githubusercontent.com` OIDC provider and restrict the `sub` claim to this repository and its deployment branch. For example, replace the placeholders below with the repository owner/name and branch:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::<account-id>:oidc-provider/token.actions.githubusercontent.com" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+      },
+      "StringLike": {
+        "token.actions.githubusercontent.com:sub": "repo:<owner>/<repository>:ref:refs/heads/main"
+      }
+    }
+  }]
+}
+```
+
+Store that role ARN in the repository secret `AWS_ROLE_TO_ASSUME`. The workflow also expects repository variables `AWS_REGION`, `TF_STATE_BUCKET`, and `QUICKSIGHT_USER`. The state bucket must exist before the workflow starts.

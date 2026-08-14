@@ -11,8 +11,23 @@ data "aws_iam_policy_document" "lambda_assume" {
 
 data "archive_file" "converter" {
   type        = "zip"
-  source_dir  = var.lambda_source_dir
+  source_dir  = "${path.module}/build/function"
   output_path = "${path.module}/converter.zip"
+}
+
+data "archive_file" "converter_dependencies" {
+  type        = "zip"
+  source_dir  = "${path.module}/build/layer"
+  output_path = "${path.module}/converter-dependencies-layer.zip"
+}
+
+resource "aws_lambda_layer_version" "converter_dependencies" {
+  layer_name               = "${var.name_prefix}-converter-dependencies"
+  filename                 = data.archive_file.converter_dependencies.output_path
+  source_code_hash         = data.archive_file.converter_dependencies.output_base64sha256
+  compatible_runtimes      = ["python3.12"]
+  compatible_architectures = ["x86_64"]
+  description              = "Linux x86_64 Python dependencies for the break-glass converter."
 }
 
 resource "aws_iam_role" "converter" {
@@ -53,6 +68,7 @@ resource "aws_lambda_function" "converter" {
   memory_size      = 1024
   filename         = data.archive_file.converter.output_path
   source_code_hash = data.archive_file.converter.output_base64sha256
+  layers           = [aws_lambda_layer_version.converter_dependencies.arn]
   # The stream name is deterministic, avoiding a Lambda/Firehose dependency cycle.
   environment { variables = { PARQUET_BUCKET = var.parquet_bucket_name, FIREHOSE_STREAM = "${var.name_prefix}-breakglass", BREAK_GLASS_ROLE_ARN = var.break_glass_role_arn } }
   tags = var.common_tags

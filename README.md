@@ -9,17 +9,36 @@ A compact AWS lab for detecting, retaining, and querying CloudTrail actions made
 ## Prerequisites ✅
 
 - Terraform 1.5 or later and AWS credentials with permissions to create the listed IAM, S3, CloudTrail, Lambda, Firehose, Glue, Athena, EventBridge, and QuickSight resources.
-- An existing, subscribed QuickSight user in the same AWS account. Set its ARN in `quicksight_user`.
-- Docker is required only if you build a separate Linux-compatible dependency package for Lambda. The default Terraform archive contains the converter source directory.
+- An existing, subscribed QuickSight user in the same AWS account. Set its username in `quicksight_user`.
+- Docker must be available when Terraform runs. Terraform builds a Linux-compatible Python 3.12 Lambda layer containing `pyarrow`, then deploys the converter function with that layer attached.
 
 ## Quick start 🚀
 
 ```bash
-terraform init
-terraform apply -var='quicksight_user=<existing-QuickSight-user-ARN>'
+terraform init \
+  -backend-config='bucket=<terraform-state-bucket>' \
+  -backend-config='key=breakglass-observability/terraform.tfstate' \
+  -backend-config='region=us-east-1' \
+  -backend-config='encrypt=true'
+terraform apply -var='quicksight_user=<existing-QuickSight-username>'
 ```
 
 S3 buckets use `force_destroy = true` and `prevent_destroy = false`, so `terraform destroy` cleans up lab objects as well as resources.
+
+The backend bucket must already exist. The GitHub Actions workflow supplies these backend values automatically from the `TF_STATE_BUCKET` repository variable.
+
+## GitHub Actions
+
+The repository workflow builds the Lambda function and dependency layer, then runs Terraform using GitHub Actions OIDC. Configure the following GitHub settings:
+
+- Secret `AWS_ROLE_TO_ASSUME`: ARN of an IAM role trusted by GitHub's OIDC provider.
+- Variable `AWS_REGION`: deployment region, such as `us-east-1`.
+- Variable `TF_STATE_BUCKET`: pre-existing S3 bucket for the Terraform state.
+- Variable `QUICKSIGHT_USER`: existing QuickSight username (the ARN is derived from the account and region).
+
+Attach [permission-policy.json](permission-policy.json) to the assumed role. It grants Terraform access to the managed AWS services and the S3 state backend. The role also needs the GitHub OIDC trust policy described in the [troubleshooting guide](troubleshooting/README.md).
+
+Pull requests run format, validation, and plan. Pushes to `main` apply the saved plan. Manual runs expose a `destroy` boolean: `false` applies the saved plan, while `true` runs `terraform destroy`. The assumed role must have the permissions required by the Terraform resources and the S3 backend.
 
 ## Troubleshooting
 
@@ -57,7 +76,7 @@ BreakGlassRole -- CloudTrail management + S3 data events --> raw CloudTrail S3
 | `break_glass_role_name`  | string       | `BreakGlassRole` | Emergency role to create and detect.                          |
 | `trusted_principal_arns` | list(string) | `[]`             | Principals allowed to assume it.                              |
 | `log_retention_days`     | number       | `90`             | Parquet lifecycle expiration.                                 |
-| `quicksight_user`        | string       | required         | Existing QuickSight user ARN.                                 |
+| `quicksight_user`        | string       | required         | Existing QuickSight username; its ARN is derived automatically. |
 | `enable_glue_crawler`    | bool         | `true`           | Enable daily partition discovery.                             |
 
 ## Example Athena queries

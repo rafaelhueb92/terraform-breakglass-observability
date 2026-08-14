@@ -1,0 +1,85 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TerraformStateBackend",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformIamResources",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:CreateRole",
+        "iam:CreateServiceLinkedRole",
+        "iam:DeleteRole",
+        "iam:DeleteRolePolicy",
+        "iam:DeleteServiceLinkedRole",
+        "iam:DetachRolePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:ListRoles",
+        "iam:PassRole",
+        "iam:PutRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformLambdaResources",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:AddPermission",
+        "lambda:CreateFunction",
+        "lambda:DeleteFunction",
+        "lambda:DeleteLayerVersion",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lambda:GetLayerVersion",
+        "lambda:InvokeFunction",
+        "lambda:ListVersionsByFunction",
+        "lambda:PublishLayerVersion",
+        "lambda:RemovePermission",
+        "lambda:TagResource",
+        "lambda:UntagResource",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformAnalyticsResources",
+      "Effect": "Allow",
+      "Action": [
+        "athena:*",
+        "glue:*",
+        "quicksight:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformEventAndDeliveryResources",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:*",
+        "events:*",
+        "firehose:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CallerIdentity",
+      "Effect": "Allow",
+      "Action": "sts:GetCallerIdentity",
+      "Resource": "*"
+    }
+  ]
+}
