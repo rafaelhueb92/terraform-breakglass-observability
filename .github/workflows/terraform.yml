@@ -20,7 +20,8 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
   TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
   TF_VAR_quicksight_user: ${{ vars.QUICKSIGHT_USER }}
-  TF_STATE_KEY: "breakglass-observability-${{ secrets.AWS_ACCOUNT_ID }}/terraform.tfstate"
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || secrets.TF_STATE_BUCKET || format('breakglass-observability-{0}', secrets.AWS_ACCOUNT_ID) }}
+  TF_STATE_KEY: ${{ vars.TF_STATE_KEY || 'breakglass-observability/terraform.tfstate' }}
 
 jobs:
   terraform:
@@ -52,10 +53,17 @@ jobs:
       - name: Terraform format check
         run: terraform fmt -check -recursive
 
+      - name: Check backend configuration
+        run: |
+          if [ -z "$TF_STATE_BUCKET" ]; then
+            echo "TF_STATE_BUCKET is empty. Set the TF_STATE_BUCKET repository variable or secret, or set AWS_ACCOUNT_ID as a secret." >&2
+            exit 1
+          fi
+
       - name: Terraform init
         run: >-
-          terraform init 
-          -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+          terraform init -input=false -reconfigure
+          -backend-config="bucket=${{ env.TF_STATE_BUCKET }}"
           -backend-config="key=${{ env.TF_STATE_KEY }}"
           -backend-config="region=${{ env.AWS_REGION }}"
           -backend-config="encrypt=true"

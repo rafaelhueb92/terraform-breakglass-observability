@@ -32,14 +32,14 @@ The backend bucket must already exist. The GitHub Actions workflow supplies thes
 The repository workflow builds the Lambda function and dependency layer, then runs Terraform using GitHub Actions OIDC. Configure the following GitHub settings:
 
 - Secret `AWS_ROLE_TO_ASSUME`: ARN of an IAM role trusted by GitHub's OIDC provider.
-- Secret `AWS_ACCOUNT_ID`: 12-digit AWS account ID used to isolate the remote-state key.
 - Variable `AWS_REGION`: deployment region, such as `us-east-1`.
-- Variable `TF_STATE_BUCKET`: pre-existing S3 bucket for the Terraform state.
+- Variable `TF_STATE_BUCKET`: pre-existing S3 bucket for the Terraform state. It can also be configured as a secret; if omitted, the workflow derives `breakglass-<AWS_ACCOUNT_ID>` from the `AWS_ACCOUNT_ID` secret.
+- Variable `TF_STATE_KEY`: optional state object key; defaults to `breakglass-observability/terraform.tfstate`.
 - Variable `QUICKSIGHT_USER`: existing QuickSight username (the ARN is derived from the account and region).
 
 Attach [permission-policy.json](permission-policy.json) to the assumed role. It grants Terraform access to the managed AWS services and the S3 state backend. The role also needs the GitHub OIDC trust policy described in the [troubleshooting guide](troubleshooting/README.md).
 
-Pull requests run format, validation, and plan. Pushes to `main` apply the saved plan. Manual runs expose a `destroy` boolean: `false` applies the saved plan, while `true` runs `terraform destroy`. The assumed role must have the permissions required by the Terraform resources and the S3 backend.
+Pull requests run format, validation, and plan. Pushes to `master` or `main` apply the saved plan. Manual runs expose a `destroy` boolean: `false` applies the saved plan, while `true` runs `terraform destroy`. The assumed role must have the permissions required by the Terraform resources and the S3 backend.
 
 ## Troubleshooting
 
