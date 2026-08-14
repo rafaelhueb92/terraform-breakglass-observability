@@ -47,7 +47,7 @@ See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup,
 
 ## Architecture 🏗️
 
-![Break-Glass Observability architecture](images/architecture.png)
+![Break-Glass Observability architecture](images/architecture.svg)
 
 ```text
 Trusted principals
@@ -88,16 +88,16 @@ s3://<parquet-bucket>/
 
 ## Variables ⚙️ ⚙️
 
-| Name                     | Type         | Default          | Description                                                     |
-| ------------------------ | ------------ | ---------------- | --------------------------------------------------------------- |
-| `aws_region`             | string       | `us-east-1`      | Deployment Region.                                              |
-| `prefix`                 | string       | `breakglass`     | Resource-name prefix; account ID is appended to bucket names.   |
-| `break_glass_role_name`  | string       | `BreakGlassRole` | Emergency role to create and detect.                            |
-| `trusted_principal_arns` | list(string) | `[]`             | Principals allowed to assume it.                                |
-| `log_retention_days`     | number       | `90`             | Parquet lifecycle expiration.                                   |
-| `error_and_results_retention_days` | number | `30`    | Retention for `errors/` and `athena-results/` artifacts.        |
-| `quicksight_user`        | string       | required         | Existing QuickSight username; its ARN is derived automatically. |
-| `enable_glue_crawler`    | bool         | `true`           | Enable daily partition discovery.                               |
+| Name                               | Type         | Default          | Description                                                     |
+| ---------------------------------- | ------------ | ---------------- | --------------------------------------------------------------- |
+| `aws_region`                       | string       | `us-east-1`      | Deployment Region.                                              |
+| `prefix`                           | string       | `breakglass`     | Resource-name prefix; account ID is appended to bucket names.   |
+| `break_glass_role_name`            | string       | `BreakGlassRole` | Emergency role to create and detect.                            |
+| `trusted_principal_arns`           | list(string) | `[]`             | Principals allowed to assume it.                                |
+| `log_retention_days`               | number       | `90`             | Parquet lifecycle expiration.                                   |
+| `error_and_results_retention_days` | number       | `30`             | Retention for `errors/` and `athena-results/` artifacts.        |
+| `quicksight_user`                  | string       | required         | Existing QuickSight username; its ARN is derived automatically. |
+| `enable_glue_crawler`              | bool         | `true`           | Enable daily partition discovery.                               |
 
 ## Example Athena queries
 
