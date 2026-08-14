@@ -51,7 +51,8 @@
         "lambda:TagResource",
         "lambda:UntagResource",
         "lambda:UpdateFunctionCode",
-        "lambda:UpdateFunctionConfiguration"
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:*"
       ],
       "Resource": "*"
     },
