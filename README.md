@@ -70,15 +70,15 @@ BreakGlassRole -- CloudTrail management + S3 data events --> raw CloudTrail S3
 
 ## Variables ⚙️ ⚙️
 
-| Name                     | Type         | Default          | Description                                                   |
-| ------------------------ | ------------ | ---------------- | ------------------------------------------------------------- |
-| `aws_region`             | string       | `us-east-1`      | Deployment Region.                                            |
-| `prefix`                 | string       | `breakglass`     | Resource-name prefix; account ID is appended to bucket names. |
-| `break_glass_role_name`  | string       | `BreakGlassRole` | Emergency role to create and detect.                          |
-| `trusted_principal_arns` | list(string) | `[]`             | Principals allowed to assume it.                              |
-| `log_retention_days`     | number       | `90`             | Parquet lifecycle expiration.                                 |
+| Name                     | Type         | Default          | Description                                                     |
+| ------------------------ | ------------ | ---------------- | --------------------------------------------------------------- |
+| `aws_region`             | string       | `us-east-1`      | Deployment Region.                                              |
+| `prefix`                 | string       | `breakglass`     | Resource-name prefix; account ID is appended to bucket names.   |
+| `break_glass_role_name`  | string       | `BreakGlassRole` | Emergency role to create and detect.                            |
+| `trusted_principal_arns` | list(string) | `[]`             | Principals allowed to assume it.                                |
+| `log_retention_days`     | number       | `90`             | Parquet lifecycle expiration.                                   |
 | `quicksight_user`        | string       | required         | Existing QuickSight username; its ARN is derived automatically. |
-| `enable_glue_crawler`    | bool         | `true`           | Enable daily partition discovery.                             |
+| `enable_glue_crawler`    | bool         | `true`           | Enable daily partition discovery.                               |
 
 ## Example Athena queries
 
@@ -102,6 +102,6 @@ At low personal-lab volume this should be near-zero: S3 storage and Athena scans
 
 ```bash
 aws sts assume-role \
-  --role-arn "arn:aws:iam::123456789012:role/TargetRoleName" \
-  --role-session-name "CLI-Session"
+        --role-arn "arn:aws:iam::$(aws sts get-caller-identity --query Account | tr -d '"'):role/BreakGlassRole" \
+        --role-session-name "bg-session"
 ```
