@@ -44,7 +44,7 @@ data "aws_iam_policy_document" "access" {
     actions   = ["rds:Describe*", "eks:Describe*"]
     resources = ["*"]
   }
-   statement {
+  statement {
     effect    = "Allow"
     actions   = ["sqs:*"]
     resources = ["*"]
