@@ -32,6 +32,7 @@ The backend bucket must already exist. The GitHub Actions workflow supplies thes
 The repository workflow builds the Lambda function and dependency layer, then runs Terraform using GitHub Actions OIDC. Configure the following GitHub settings:
 
 - Secret `AWS_ROLE_TO_ASSUME`: ARN of an IAM role trusted by GitHub's OIDC provider.
+- Secret `AWS_ACCOUNT_ID`: 12-digit AWS account ID used to isolate the remote-state key.
 - Variable `AWS_REGION`: deployment region, such as `us-east-1`.
 - Variable `TF_STATE_BUCKET`: pre-existing S3 bucket for the Terraform state.
 - Variable `QUICKSIGHT_USER`: existing QuickSight username (the ARN is derived from the account and region).
