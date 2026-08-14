@@ -12,7 +12,8 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
-
+.abacus/
+.abacusai/
 # Lambda build output and deployment archive
 modules/ingestion/converter.zip
 lambda/converter/*

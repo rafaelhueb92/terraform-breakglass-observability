@@ -37,7 +37,7 @@ resource "aws_glue_catalog_table" "cloudtrail_breakglass" {
   parameters    = { EXTERNAL = "TRUE", "parquet.compression" = "SNAPPY" }
 
   storage_descriptor {
-    location      = "s3://${aws_s3_bucket.parquet.bucket}/year=/"
+    location      = "s3://${aws_s3_bucket.parquet.bucket}/"
     input_format  = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
     output_format = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
     ser_de_info { serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" }

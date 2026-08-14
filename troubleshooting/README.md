@@ -71,6 +71,31 @@ terraform state rm module.analytics.aws_quicksight_account_subscription.poc
 
 This command does not delete the QuickSight account; it only stops Terraform from managing that obsolete resource.
 
+## Athena returns 0 rows
+
+If `SELECT * FROM cloudtrail_breakglass` returns no rows even though Parquet objects exist in the bucket, the Glue table's `storage_descriptor.location` is pointing at the wrong path.
+
+The table is partitioned by `year`/`month`/`day`, and Firehose writes objects under `year=.../month=.../day=.../`. The table `location` must be the **base path** that contains the top-level partition folders:
+
+```hcl
+location = "s3://${aws_s3_bucket.parquet.bucket}/"
+```
+
+A leftover value like `s3://.../year=/` points at a non-existent folder, so Athena scans nothing. Fix the location in `modules/lake/main.tf`, apply, then register the existing partitions:
+
+```bash
+terraform apply
+aws athena start-query-execution \
+  --query-string "MSCK REPAIR TABLE breakglass_db.cloudtrail_breakglass" \
+  --work-group breakglass-analytics
+```
+
+Note the table must be qualified with the `breakglass_db` database — the Athena workgroup's default database is `default`, so an unqualified `MSCK REPAIR TABLE cloudtrail_breakglass` silently targets the wrong database. Verify partitions are registered:
+
+```bash
+aws glue get-partitions --database-name breakglass_db --table-name cloudtrail_breakglass
+```
+
 ## Firehose `Lambda.InvokeAccessDenied`
 
 If Firehose writes `processing-failed` objects to the `errors/` prefix with `errorCode: Lambda.InvokeAccessDenied`, the Firehose IAM role is missing permission to invoke the converter Lambda on the `$LATEST` qualifier.
