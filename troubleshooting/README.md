@@ -71,19 +71,41 @@ terraform state rm module.analytics.aws_quicksight_account_subscription.poc
 
 This command does not delete the QuickSight account; it only stops Terraform from managing that obsolete resource.
 
-## Firehose buffering size
+## Firehose `Lambda.InvokeAccessDenied`
 
-The Firehose delivery stream is configured with `buffering_size = 64` MB. This was raised from the original 5 MB to reduce small Parquet fragments and improve Athena query performance. With a larger buffer, Firehose groups more records before landing each Parquet object, which lowers the number of objects scanned by Athena and reduces Glue crawler overhead.
+If Firehose writes `processing-failed` objects to the `errors/` prefix with `errorCode: Lambda.InvokeAccessDenied`, the Firehose IAM role is missing permission to invoke the converter Lambda on the `$LATEST` qualifier.
 
-If your pipeline produces low-volume traffic, you may see a corresponding increase in latency because records wait until the buffer is full or the `buffering_interval` (60 seconds) expires. This is expected. For high-volume pipelines, the larger buffer is more efficient.
+Firehose invokes the Lambda using the qualified ARN `...converter:$LATEST`. The IAM policy must grant `lambda:InvokeFunction` on that qualified ARN, not just the unqualified function ARN. A policy that only lists the unqualified ARN is denied:
 
-To change the buffer size, edit `buffering_size` in `modules/ingestion/main.tf` and reapply:
+```text
+Lambda.InvokeAccessDenied: Access was denied. Ensure that the access policy allows access to the Lambda function.
+```
+
+Verify with the IAM policy simulator, using the qualified ARN:
+
+```bash
+aws iam simulate-principal-policy \
+  --policy-source-arn arn:aws:iam::<account-id>:role/<prefix>-firehose \
+  --action-names lambda:InvokeFunction \
+  --resource-arns 'arn:aws:lambda:<region>:<account-id>:function:<prefix>-converter:$LATEST'
+```
+
+The result must be `allowed`. If it is `implicitDeny`, add the qualified ARN to the `lambda:InvokeFunction` statement in `modules/ingestion/main.tf`:
+
+```hcl
+statement {
+  actions   = ["lambda:InvokeFunction", "lambda:GetFunctionConfiguration"]
+  resources = [aws_lambda_function.converter.arn, "${aws_lambda_function.converter.arn}:$LATEST"]
+}
+```
+
+Then reapply:
 
 ```bash
 terraform apply
 ```
 
-Valid values are between 1 and 64 MB. Choose a smaller value if you need records delivered more quickly, or keep 64 MB for best query efficiency and cost at scale.
+The resource-based policy on the Lambda (`aws_lambda_permission.firehose`) is separate and does not need the qualifier; it already covers `$LATEST`. This error is distinct from the buffering-size tuning below.
 
 ## Firehose buffering size
 

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm *)",
+      "Bash(chmod *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(aws *)",
+      "Bash(cd /Users/rafaelhueb/Desktop/projects/terraform-breakglass-observability)",
+      "Bash(cd /Users/rafaelhueb/Desktop/projects/terraform-breakglass-observability)",
+      "Bash(python3 *)",
+      "Bash(breakglass-263015886462-firehose *)",
+      "Bash(AK=$(echo *)",
+      "Bash(SK=$(echo *)",
+      "Bash(ST=$(echo *)",
+      "Bash(AWS_ACCESS_KEY_ID=$AK *)",
+      "Bash(cd /Users/rafaelhueb/Desktop/projects/terraform-breakglass-observability)",
+      "Bash(cd /Users/rafaelhueb/Desktop/projects/terraform-breakglass-observability)",
+      "Bash(cd /Users/rafaelhueb/Desktop/projects/terraform-breakglass-observability)",
+      "Bash(cd /Users/rafaelhueb/Desktop/projects/terraform-breakglass-observability)",
+      "Bash(terraform *)"
+    ]
+  }
+}

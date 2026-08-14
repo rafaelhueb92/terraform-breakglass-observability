@@ -79,7 +79,7 @@ data "aws_iam_policy_document" "firehose" {
   }
   statement {
     actions   = ["lambda:InvokeFunction", "lambda:GetFunctionConfiguration"]
-    resources = [aws_lambda_function.converter.arn]
+    resources = [aws_lambda_function.converter.arn, "${aws_lambda_function.converter.arn}:$LATEST"]
   }
   statement {
     actions   = ["logs:PutLogEvents"]
