@@ -105,3 +105,5 @@ aws sts assume-role \
         --role-arn "arn:aws:iam::$(aws sts get-caller-identity --query Account | tr -d '"'):role/BreakGlassRole" \
         --role-session-name "bg-session"
 ```
+
+Use the flage --query Credentials and update your credentials file (~/.aws/credentials) to use the credentials.
