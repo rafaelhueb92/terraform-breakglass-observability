@@ -61,12 +61,28 @@ BreakGlassRole -- CloudTrail management + S3 data events --> raw CloudTrail S3
                                                        Firehose
                                                             |
                                                             v
-                  Glue crawler --> Glue catalog <-- partitioned Parquet S3
+                  Glue crawler --> Glue catalog <-- partitioned Parquet S3 (data/)
                                               |
                                       Athena workgroup / named queries
                                               |
                                       QuickSight data source + dataset
 ```
+
+## S3 folder structure
+
+The Parquet bucket keeps queryable data isolated from operational artifacts so Athena/Glue never scan non-Parquet objects:
+
+```text
+s3://<parquet-bucket>/
+├── athena-results/          # Athena query results (CSV) — short retention
+├── errors/                  # Firehose processing-failed JSON — short retention
+└── data/                    # partitioned Parquet lake (queryable)
+    └── year=2026/
+        └── month=08/
+            └── day=14/
+```
+
+`data/` follows `log_retention_days`; `errors/` and `athena-results/` follow `error_and_results_retention_days` (default 30).
 
 ## Variables ⚙️ ⚙️
 
@@ -77,6 +93,7 @@ BreakGlassRole -- CloudTrail management + S3 data events --> raw CloudTrail S3
 | `break_glass_role_name`  | string       | `BreakGlassRole` | Emergency role to create and detect.                            |
 | `trusted_principal_arns` | list(string) | `[]`             | Principals allowed to assume it.                                |
 | `log_retention_days`     | number       | `90`             | Parquet lifecycle expiration.                                   |
+| `error_and_results_retention_days` | number | `30`    | Retention for `errors/` and `athena-results/` artifacts.        |
 | `quicksight_user`        | string       | required         | Existing QuickSight username; its ARN is derived automatically. |
 | `enable_glue_crawler`    | bool         | `true`           | Enable daily partition discovery.                               |
 

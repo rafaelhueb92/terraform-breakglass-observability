@@ -15,12 +15,26 @@ resource "aws_s3_bucket_public_access_block" "parquet" {
 
 resource "aws_s3_bucket_lifecycle_configuration" "parquet" {
   bucket = aws_s3_bucket.parquet.id
+  # data/ holds the partitioned Parquet lake and follows log_retention_days.
   rule {
-    id     = "lab-retention"
+    id     = "data-retention"
     status = "Enabled"
-    filter {}
-    # Observability data is useful briefly in a lab; expiration prevents silent cost growth.
+    filter { prefix = "data/" }
     expiration { days = var.log_retention_days }
+  }
+  # errors/ and athena-results/ are operational artifacts, not queryable data;
+  # expire them sooner to avoid silent cost growth.
+  rule {
+    id     = "error-results-retention"
+    status = "Enabled"
+    filter { prefix = "errors/" }
+    expiration { days = var.error_and_results_retention_days }
+  }
+  rule {
+    id     = "athena-results-retention"
+    status = "Enabled"
+    filter { prefix = "athena-results/" }
+    expiration { days = var.error_and_results_retention_days }
   }
 }
 
@@ -36,8 +50,12 @@ resource "aws_glue_catalog_table" "cloudtrail_breakglass" {
   table_type    = "EXTERNAL_TABLE"
   parameters    = { EXTERNAL = "TRUE", "parquet.compression" = "SNAPPY" }
 
+  # data/ isolation matters: Athena/Glue scan only this prefix, so non-Parquet
+  # objects such as CSV query results (athena-results/) or JSON error logs
+  # (errors/) are never treated as part of the partitioned dataset, which would
+  # otherwise corrupt schema inference or fail queries.
   storage_descriptor {
-    location      = "s3://${aws_s3_bucket.parquet.bucket}/"
+    location      = "s3://${var.parquet_bucket_name}/data/"
     input_format  = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
     output_format = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
     ser_de_info { serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" }
@@ -107,7 +125,7 @@ resource "aws_glue_crawler" "breakglass" {
   database_name = aws_glue_catalog_database.breakglass.name
   role          = aws_iam_role.crawler.arn
   schedule      = "cron(0 1 * * ? *)"
-  s3_target { path = "s3://${aws_s3_bucket.parquet.bucket}/" }
+  s3_target { path = "s3://${var.parquet_bucket_name}/data/" }
   schema_change_policy {
     delete_behavior = "LOG"
     update_behavior = "UPDATE_IN_DATABASE"

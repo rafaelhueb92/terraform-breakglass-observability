@@ -32,6 +32,16 @@ variable "log_retention_days" {
   }
 }
 
+variable "error_and_results_retention_days" {
+  description = "Number of days to retain operational artifacts (errors/ and athena-results/)."
+  type        = number
+  default     = 30
+  validation {
+    condition     = var.error_and_results_retention_days >= 1
+    error_message = "error_and_results_retention_days must be at least one day."
+  }
+}
+
 variable "quicksight_user" {
   description = "An existing QuickSight user that will own and query the dataset."
   type        = string

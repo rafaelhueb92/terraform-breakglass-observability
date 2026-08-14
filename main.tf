@@ -32,10 +32,11 @@ module "iam" {
 module "lake" {
   source = "./modules/lake"
 
-  parquet_bucket_name = "${local.name_prefix}-parquet"
-  log_retention_days  = var.log_retention_days
-  enable_glue_crawler = var.enable_glue_crawler
-  common_tags         = local.common_tags
+  parquet_bucket_name              = "${local.name_prefix}-parquet"
+  log_retention_days               = var.log_retention_days
+  error_and_results_retention_days = var.error_and_results_retention_days
+  enable_glue_crawler              = var.enable_glue_crawler
+  common_tags                      = local.common_tags
 }
 
 module "ingestion" {

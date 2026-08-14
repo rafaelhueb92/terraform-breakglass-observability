@@ -100,10 +100,12 @@ resource "aws_kinesis_firehose_delivery_stream" "breakglass" {
   name        = "${var.name_prefix}-breakglass"
   destination = "extended_s3"
   extended_s3_configuration {
-    role_arn            = aws_iam_role.firehose.arn
-    bucket_arn          = var.parquet_bucket_arn
-    prefix              = "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
-    error_output_prefix = "errors/!{firehose:error-output-type}/"
+    role_arn   = aws_iam_role.firehose.arn
+    bucket_arn = var.parquet_bucket_arn
+    # Parquet data is isolated under data/ so Athena/Glue never scan the
+    # athena-results/ or errors/ prefixes as part of the partitioned dataset.
+    prefix              = "data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
+    error_output_prefix = "errors/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/!{firehose:error-output-type}/"
     buffering_size      = 64
     buffering_interval  = 60
     compression_format  = "UNCOMPRESSED"
