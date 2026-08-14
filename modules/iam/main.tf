@@ -44,6 +44,11 @@ data "aws_iam_policy_document" "access" {
     actions   = ["rds:Describe*", "eks:Describe*"]
     resources = ["*"]
   }
+   statement {
+    effect    = "Allow"
+    actions   = ["sqs:*"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "break_glass_access" {
