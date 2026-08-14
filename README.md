@@ -47,7 +47,7 @@ See the [troubleshooting guide](troubleshooting/README.md) for QuickSight setup,
 
 ## Architecture 🏗️
 
-![Break-Glass Observability architecture](images/architecture.png)
+![Break-Glass Observability architecture](images/architecture.jpeg)
 
 ```text
 Trusted principals
